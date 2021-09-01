@@ -26,5 +26,5 @@ export TF_VAR_create_iam_instance_profile=true
 4. Apply terraform
 
 ```
-terraform -chdir=infra/deploy apply -auto-approve
+terraform -chdir=deploy/infra apply -auto-approve
 ```
