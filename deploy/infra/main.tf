@@ -255,7 +255,9 @@ resource "aws_security_group" "konvoy_private" {
   tags = "${merge(
   var.tags,
   tomap({
-      "Name": "${local.cluster_name}-sg-private"
+      "Name": "${local.cluster_name}-sg-private",
+      "kubernetes.io/cluster/${local.cluster_name}": "owned",
+      "kubernetes.io/cluster": "${local.cluster_name}"
     }
     )
   )}"
@@ -263,7 +265,7 @@ resource "aws_security_group" "konvoy_private" {
 
 
 resource "aws_security_group" "konvoy_elb" {
-  description = "Allow all communication between instances"
+  description = "Security Group used by elb"
   vpc_id      = aws_vpc.konvoy_vpc.id
 
   ingress {
