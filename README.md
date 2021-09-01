@@ -17,6 +17,7 @@ terraform -chdir=deploy/infra init
 > Note: Set the owner and expiration tags and the ami image as required.
 
 ```
+export TF_VAR_cluster_name=$USER-konvoy
 export TF_VAR_tags='{"owner":"abhoj","expiration":"32h"}'
 export TF_VAR_node_ami=ami-0e6702240b9797e12
 export TF_VAR_ssh_key_name=flatcar-konvoy #created key pair by hand in aws portal and then used ssh-agent to load the key locally
