@@ -292,11 +292,85 @@ kubectl logs -f -n cappp-system deploy/cappp-controller-manager
 
 ```
 
-Get KUBECONFIG file
+Get DKP cluster's kubeconfig file
 
 ```
-./dkp get kubeconfig -c $CLUSTER_NAME
+./dkp get kubeconfig -c $CLUSTER_NAME > admin.conf
 ```
 
 7. Deploy Kommander 
-Once the base cluser is ready
+Once the base cluser is ready deploy Kommander
+
+Set the DKP cluster's kubeconfig file retrieved in the last step as the current kubeconfig
+
+```
+export KUBECONFIG=./admin.conf
+```
+
+Download the kommander image
+```
+wget "https://mesosphere.github.io/kommander/charts/kommander-bootstrap-${VERSION}.tgz"
+```
+
+Set airgapped-values.yaml
+```
+export GOARCH=amd64
+export CERT_MANAGER=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
+cat <<EOF > values-airgapped.yaml
+airgapped:
+  enabled: true
+  helmMirror:
+    image:
+      tag: ${VERSION}-${GOARCH}
+certManager: ${CERT_MANAGER}
+authorizedlister:
+  image:
+    tag: ${VERSION}-${GOARCH}
+webhook:
+  image:
+    tag: ${VERSION}-${GOARCH}
+bootstrapper:
+  containers:
+    manager:
+      image:
+        tag: ${VERSION}-${GOARCH}
+controller:
+  containers:
+    manager:
+      image:
+        tag: ${VERSION}-${GOARCH}
+fluxOperator:
+  containers:
+    manager:
+      image:
+        tag: ${VERSION}-${GOARCH}
+gitrepository:
+  image:
+    tag: ${VERSION}-${GOARCH}
+appmanagement:
+  containers:
+    manager:
+      image:
+        repository: mesosphere/kommander2-appmanagement
+        tag: ${VERSION}-${GOARCH}
+
+EOF
+
+```
+
+Deploy kommander helm chart
+
+```
+helm install -n kommander --create-namespace kommander-bootstrap kommander-bootstrap-${VERSION}.tgz --values values-airgapped.yaml
+
+```
+
+Watch all the pods get deployed
+
+```
+watch kubectl get pods -n kommander
+```
+
+Once the chart is deployed it will display details on getting the kommander portal endpoint and login information
+
+ENJOY!!!
