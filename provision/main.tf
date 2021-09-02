@@ -17,6 +17,11 @@ variable "control_plane_count" {
   default     = 1 
 }
 
+variable "worker_node_count" {
+  description = "Number of control plane nodes"
+  default     = 4
+}
+
 variable "aws_region" {
   description = "AWS region where to deploy the cluster"
   default     = "us-west-2"
@@ -445,7 +450,7 @@ resource "aws_instance" "control_plane" {
 }
 
 resource "aws_instance" "worker" {
-  count                       = 4
+  count                       = var.worker_node_count
   vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
   subnet_id                   = aws_subnet.konvoy_public.id
   key_name                    = local.cluster_name
