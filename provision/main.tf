@@ -12,6 +12,11 @@ provider "aws" {
   skip_metadata_api_check = var.skip_metadata_api_check
 }
 
+variable "control_plane_count" {
+  description = "Number of control plane nodes"
+  default     = 1 
+}
+
 variable "aws_region" {
   description = "AWS region where to deploy the cluster"
   default     = "us-west-2"
@@ -371,7 +376,7 @@ resource "aws_security_group" "konvoy_egress" {
 }
 
 resource "aws_instance" "control_plane" {
-  count                       = 3
+  count                       = var.control_plane_count
   vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
   subnet_id                   = aws_subnet.konvoy_public.id
   key_name                    = local.cluster_name
