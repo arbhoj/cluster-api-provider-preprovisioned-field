@@ -118,6 +118,45 @@ This playbook will:
 ansible-playbook -i inventory_registry.yaml ansible/image_registry_setup.yaml
 ```
 
+### Run playbook to configure disks for localvolumes
+This playbook will configure and mount the disks to be used by the localvolumeprovisioner
+
+```
+ansible-playbook -i inventory_registry.yaml ansible/configure_disks.yaml
+```
+
+Push images to the registry. Note: Currently only Kommander images are packaged
+
+> Note: Do this on the registry server
+```
+export VERSION=v2.0.0
+wget "https://downloads.mesosphere.com/kommander/airgapped/${VERSION}/kommander_image_bundle_${VERSION}_linux_amd64.tar" -O kommander-image-bundle.tar
+
+export REGISTRY_URL=<REGISTRY_SERVER_PRIVATE_IP>:5000
+export AIRGAPPED_TAR_FILE=kommander-image-bundle.tar
+```
+
+Create and execute the following script
+
+```
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+readonly AIRGAPPED_TAR_FILE=${AIRGAPPED_TAR_FILE:-"kommander-image-bundle.tar"}
+readonly REGISTRY_URL=${REGISTRY_URL?"Need to set REGISTRY_URL. E.g: 10.23.45.67:5000"}
+
+docker load <"${AIRGAPPED_TAR_FILE}"
+
+while read -r IMAGE; do
+    echo "Processing ${IMAGE}"
+    REGISTRY_IMAGE="$(echo "${IMAGE}" | sed -E "s/^(quay|gcr|ghcr|docker).io/${REGISTRY_URL}/")"
+    docker tag "${IMAGE}" "${REGISTRY_IMAGE}"
+    docker push "${REGISTRY_IMAGE}"
+done < <(tar xfO "${AIRGAPPED_TAR_FILE}" "index.json" | grep -oP '(?<="io.containerd.image.name":").*?(?=",)')
+
+```
+
 ### Run konvoy-image-builder
 This will setup the cluster nodes with all the required packages
 
@@ -237,4 +276,27 @@ Sample run with a hint --os-hint flag required to deploy to flatcar
 
 ```
 
+6. Deploy DKP Base Cluster
 
+Deploy DKP Base Cluster by applying the following to the KIND cluster
+```
+kubectl apply -f deploy-dkp.yaml
+```
+
+Watch the status and make sure there are no errors
+
+```
+./dkp describe cluster -c $CLUSTER_NAME
+
+kubectl logs -f -n cappp-system deploy/cappp-controller-manager
+
+```
+
+Get KUBECONFIG file
+
+```
+./dkp get kubeconfig -c $CLUSTER_NAME
+```
+
+7. Deploy Kommander 
+Once the base cluser is ready
