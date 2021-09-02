@@ -1,0 +1,24 @@
+resource "local_file" "ansible_inventory" {
+  filename = "${var.inventory_path}"
+
+  depends_on = [aws_instance.control_plane{{ range $workerPool := .WorkerPools }}, {{ if $workerPool.UseSpot }} aws_spot_instance_request.worker_pool{{$workerPool.Index}} {{ else }}aws_instance.worker_pool{{$workerPool.Index}}{{ end }} {{ end }}]
+
+  provisioner "local-exec" {
+    command = "chmod 644 ${var.inventory_path}"
+  }
+
+  content = <<EOF
+all:
+  vars:
+    version: ${var.inventory_version}
+    order: sorted
+    ansible_python_interpreter: ${var.ansible_python_interpreter}
+    ansible_user: ${var.ssh_user}
+    ansible_port: 22
+${chomp(join("\n", compact(list(
+var.ssh_private_key_file == "" ? "" : "    ansible_ssh_private_key_file: \"${var.ssh_private_key_file}\"",
+))))}
+
+control-plane:
+  hosts:
+

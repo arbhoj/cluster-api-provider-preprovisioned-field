@@ -1,0 +1,26 @@
+---
+- hosts: registry
+  gather_facts: no
+  become: yes
+  tasks: 
+  - name: Install packages
+    yum:
+      name:
+      - docker
+      - wget
+      - git
+      state: present
+  - name: Create docker group
+    group:
+      name: docker
+      state: present
+  - name: Add centos user to docker group    
+    user: 
+      name: centos
+      groups: docker
+      append: yes
+  - name: Start docker service
+    service:
+      name: docker
+      state: started
+      enabled: yes

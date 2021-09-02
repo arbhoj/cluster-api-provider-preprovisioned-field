@@ -3,30 +3,35 @@
 
 ## Steps 
 1. Configure AWS Credentials
-2. Create ssh key in aws
-3. Load key in ssh-agent
+2. Set cluster name
 ```
-eval `ssh-agent`
-ssh-add path/to/private/key
+TF_VAR_cluster_name=$USER-dkp20
+```
+3. Generate key pair with the same name as the cluster
+```
+ssh-keygen -q -t rsa -N '' -f $TF_VAR_cluster_name <<<y 2>&1 >/dev/null
 ```
 4. Initialize terrafom
 ```
-terraform -chdir=deploy/infra init
+terraform -chdir=provision init
 ```
-3. Set environment variables
-> Note: Set the owner and expiration tags and the ami image as required. Also update the ssh key file info
+5. Set environment variables
+> Note: Set the owner and expiration tags and the ami images as required.
 
 ```
-export TF_VAR_cluster_name=$USER-konvoy
 export TF_VAR_tags='{"owner":"abhoj","expiration":"32h"}'
 export TF_VAR_node_ami=ami-0e6702240b9797e12
-export TF_VAR_ssh_key_name=flatcar-konvoy #created key pair by hand in aws portal and then used ssh-agent to load the key locally
-export TF_VAR_ssh_username=core #default user is centos so had to override 
+export TF_VAR_registry_ami=ami-0686851c4e7b1a8e1
+export TF_VAR_ssh_username=core #default user is centos 
 export TF_VAR_create_iam_instance_profile=true
-export TF_VAR_ssh_private_key_file=flatcar-konvoy.pem
+export TF_VAR_ssh_private_key_file=../$TF_VAR_cluster_name
+export TF_VAR_ssh_public_key_file=../$TF_VAR_cluster_name.pub
 ```
-4. Apply terraform
+6. Apply terraform
 
 ```
-terraform -chdir=deploy/infra apply -auto-approve
+terraform -chdir=provision apply -auto-approve
 ```
+This will provision the cluster and provide an output like this:
+
+

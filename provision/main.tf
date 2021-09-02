@@ -2,11 +2,56 @@ terraform {
   required_version = ">= 0.12"
 }
 
+locals {
+  public_subnet_range        = var.vpc_cidr
+  cluster_name               = var.cluster_name
+}
+
 provider "aws" {
-  region = "us-west-2"
+  region                  = var.aws_region
+  skip_metadata_api_check = var.skip_metadata_api_check
+}
+
+variable "aws_region" {
+  description = "AWS region where to deploy the cluster"
+  default     = "us-west-2"
+}
+
+variable "registry_ami" {
+  description = "AMI to be used for registry server"
+  default     = "ami-0686851c4e7b1a8e1"
+}
+
+variable "skip_metadata_api_check" {
+  description = "Prevents Terraform from authenticating via the Metadata API"
+  default     = false
+}
+
+variable "ssh_private_key_file" {
+  description = "Path to the SSH private key"
+  default     = ""
+}
+
+variable "ssh_public_key_file" {
+  description = "Path to the SSH public key"
+  default = ""
+}
+
+variable "cluster_name" {
+  description = "The name of the provisioned cluster"
 }
 
 data "aws_caller_identity" "current" {}
+
+variable "ansible_python_interpreter" {
+  description = "Ansible python interpreter path in the provisione image. This is used to generate the ansible inventory file"
+  default     = "/usr/bin/python"
+}
+
+variable "inventory_path" {
+  description = "Path where ansible inventory file will be generated"
+  default     = "inventory.yaml"
+}
 
 variable "control_plane_image_id" {
   description = "[CONTROL_PLANE] AWS AMI image ID that will be used for the instances instead of the Mesosphere chosen default images"
@@ -110,10 +155,6 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "ssh_key_name" {
-  description = "The SSH key pair to use for the public instance"
-}
-
 variable "tags" {
   description = "Map of tags to add to all resources"
   type        = map
@@ -134,16 +175,12 @@ variable "ssh_username" {
   default = "centos"
 }
 
-variable "cluster_name" {
-  description = "The name of the konvoy cluster"
-  default     = "flatcar-konvoy"
-}
 
-locals {
-  public_subnet_range        = var.vpc_cidr
-  cluster_name               = var.cluster_name
+resource "aws_key_pair" "konvoy" {
+  key_name   = local.cluster_name
+  public_key = file(var.ssh_public_key_file)
+  tags = var.tags
 }
-
 
 resource "aws_vpc" "konvoy_vpc" {
   cidr_block           = var.vpc_cidr
@@ -337,7 +374,7 @@ resource "aws_instance" "control_plane" {
   count                       = 3
   vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
   subnet_id                   = aws_subnet.konvoy_public.id
-  key_name                    = var.ssh_key_name
+  key_name                    = local.cluster_name
   ami                         = var.node_ami
   instance_type               = "m5.2xlarge"
   availability_zone           = var.aws_availability_zones[0]
@@ -392,17 +429,21 @@ resource "aws_instance" "control_plane" {
       type = "ssh"
       user = var.ssh_username
       agent = true
+      private_key = file(var.ssh_private_key_file)
       host = self.public_dns
       timeout = "15m"
     }
   }
+  depends_on = [
+    aws_key_pair.konvoy,
+  ]
 }
 
 resource "aws_instance" "worker" {
   count                       = 4
   vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
   subnet_id                   = aws_subnet.konvoy_public.id
-  key_name                    = var.ssh_key_name
+  key_name                    = local.cluster_name
   ami                         = var.node_ami
   instance_type               = "m5.2xlarge"
   availability_zone           = var.aws_availability_zones[0]
@@ -442,6 +483,7 @@ resource "aws_instance" "worker" {
       user = var.ssh_username
       agent = true
       host = self.public_dns
+      private_key = file(var.ssh_private_key_file)
       timeout = "15m"
     }
   }
@@ -451,7 +493,70 @@ resource "aws_instance" "worker" {
       volume_tags,
     ]
   }  
+  depends_on = [
+    aws_key_pair.konvoy,
+  ]
+
 }
+
+
+resource "aws_instance" "registry" {
+  count                       = 1
+  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
+  subnet_id                   = aws_subnet.konvoy_public.id
+  key_name                    = local.cluster_name
+  ami                         = var.registry_ami
+  instance_type               = "m5.xlarge"
+  availability_zone           = var.aws_availability_zones[0]
+  source_dest_check           = "false"
+  associate_public_ip_address = "true"
+  
+  tags = "${merge(
+    var.tags,
+    tomap({
+      "Name": "${local.cluster_name}-registry"
+      }
+    )
+  )}"
+
+  root_block_device {
+    volume_size           = 200
+    volume_type           = var.worker_node_root_volume_type
+    iops                  = contains(["io1", "io2"], var.worker_node_root_volume_type) ? var.worker_node_root_volume_iops : 0
+    delete_on_termination = true
+
+    encrypted  = var.worker_node_kms_key_id != "" ? true : false
+    kms_key_id = var.worker_node_kms_key_id
+  }
+
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo ok"
+    ]
+
+    connection {
+      type = "ssh"
+      user = "centos"
+      agent = true
+      host = self.public_dns
+      private_key = file(var.ssh_private_key_file)
+      timeout = "15m"
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      volume_tags,
+    ]
+  }
+  depends_on = [
+    aws_key_pair.konvoy,
+  ]
+}
+
+
+
 
 resource "aws_security_group" "konvoy_control_plane" {
   description = "Allow inbound SSH for Konvoy."
@@ -505,4 +610,8 @@ output "control_plane_public_ips" {
 
 output "worker_public_ips" {
   value = aws_instance.worker.*.public_ip
+}
+
+output "registry_ip" {
+  value = aws_instance.registry.*.public_ip
 }

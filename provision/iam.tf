@@ -9,7 +9,7 @@ locals {
 
 # Define IAM role to create external volumes on AWS
 resource "aws_iam_instance_profile" "node_profile" {
-  name  = local.node_profile_name
+  name  = "${local.cluster_name}-node-profile"
   role  = aws_iam_role.node_role[count.index].name
   count = var.create_iam_instance_profile ? 1 : 0
 
