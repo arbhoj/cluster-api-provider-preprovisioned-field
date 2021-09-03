@@ -309,6 +309,60 @@ Set the DKP cluster's kubeconfig file retrieved in the last step as the current 
 export KUBECONFIG=./admin.conf
 ```
 
+Deploy awsebscsiprovisioner helm chart if not using localvolumeprovisioner (which is deployed by default in a preprovisioned cluster and set as the default storage class).
+
+Sample values.yaml for 
+```
+cat <<EOF > awsebscsiprovisioner_values.yaml
+---
+resizer:
+  enabled: true
+snapshotter:
+  enabled: true
+provisioner:
+  enableVolumeScheduling: true
+storageclass:
+  isDefault: true
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer
+  type: gp2
+  fstype: ext4
+  iopsPerGB: null
+  encrypted: false
+  kmsKeyId: null
+  allowedTopologies: []
+  # - matchLabelExpressions:
+  #   - key: topology.ebs.csi.aws.com/zone
+  #     values:
+  #     - us-west-2a
+  #     - us-west-2b
+  #     - us-west-2c
+  allowVolumeExpansion: true
+# replicas of the CSI-Controller
+replicas: 1
+statefulSetCSIController:
+# if you want to use kube2iam or kiam roles define it here as podAnnotation for the CSI-Controller (statefulSet)
+  podAnnotations: {}
+statefulSetCSISnapshotController:
+  # if you want to use kube2iam or kiam roles define it here as podAnnotation for the CSI-Snapshot-Controller (statefulSet)
+  podAnnotations: {}
+# Extra volume tags to attach to each dynamically provisioned volume.
+# ---
+# extraVolumeTags:
+#   key1: value1
+#   key2: value2
+extraVolumeTags: {}
+EOF
+
+```
+Run the following to deploy the helm chart
+```
+helm repo add d2iq-stable https://mesosphere.github.io/charts/stable  
+helm repo update
+helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml 
+```
+
+
 Download the kommander image
 ```
 export VERSION=v2.0.0
