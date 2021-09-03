@@ -215,7 +215,7 @@ export SSH_PRIVATE_KEY_SECRET_NAME="$TF_VAR_cluster_name-ssh-key"
 kubectl create secret generic $CLUSTER_NAME-ssh-key --from-file=ssh-privatekey=<path-to-ssh-private-key>
 ``` 
 
-3. Create the preprovisioned inventory file
+3. Create the preprovisioned inventory file and apply to the KIND cluster
 
 ```
 cat <<EOF > preprovisioned_inventory.yaml
@@ -260,6 +260,8 @@ spec:
       name: $SSH_PRIVATE_KEY_SECRET_NAME
       namespace: default
 EOF
+
+kubectl apply -f preprovisioned_inventory.yaml
 ```
 
 4. Generate the manifest file that contains the dkp cluster deployment spec
