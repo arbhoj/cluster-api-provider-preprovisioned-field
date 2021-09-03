@@ -311,6 +311,7 @@ export KUBECONFIG=./admin.conf
 
 Download the kommander image
 ```
+export VERSION=v2.0.0
 wget "https://mesosphere.github.io/kommander/charts/kommander-bootstrap-${VERSION}.tgz"
 ```
 
