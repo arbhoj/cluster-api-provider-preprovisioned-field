@@ -314,8 +314,10 @@ Download the kommander image
 export VERSION=v2.0.0
 wget "https://mesosphere.github.io/kommander/charts/kommander-bootstrap-${VERSION}.tgz"
 ```
+Set values.yaml for Kommander Helm Chart
+Kommander is deployed using a helm chart so the first thing we need to do is configure the values.yaml for it.
 
-Set airgapped-values.yaml
+> Note: Remove the airgapped section if not using a local registry. 
 ```
 export GOARCH=amd64
 export CERT_MANAGER=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
