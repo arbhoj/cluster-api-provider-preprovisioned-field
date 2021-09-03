@@ -361,7 +361,10 @@ helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
 helm repo update
 helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml 
 ```
-
+Unset localvolumeprovisioner as the defult storage class if not using it
+```
+kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+```
 
 Download the kommander image
 ```
