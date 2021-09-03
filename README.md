@@ -264,9 +264,9 @@ EOF
 
 4. Generate the manifest file that contains the dkp cluster deployment spec
 
-Sample run with a hint --os-hint flag required to deploy to flatcar
+Sample run with a hint --os-hint=flag required to deploy to flatcar
 ```
-./dkp create cluster preprovisioned --cluster-name ${CLUSTER_NAME} --control-plane-endpoint-host $LOAD_BALANCER --os-hint flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp.yaml
+./dkp create cluster preprovisioned --cluster-name ${CLUSTER_NAME} --control-plane-endpoint-host $LOAD_BALANCER --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp.yaml
 ```
 
 5. Update the generated manifest file to set cloud-provider to aws
