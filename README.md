@@ -22,7 +22,7 @@ terraform -chdir=provision init
 ```
 export TF_VAR_tags='{"owner":"abhoj","expiration":"32h"}'
 export TF_VAR_aws_region="us-east-1"
-export TF_VAR_availability_zone_names='["us-east-1b"]' # We currently only support one subnet and one az to keep things simple
+export TF_VAR_availability_zones='["us-east-1b"]' # We currently only support one subnet and one az to keep things simple
 export TF_VAR_node_ami=ami-0e6702240b9797e12
 export TF_VAR_registry_ami=ami-0686851c4e7b1a8e1
 export TF_VAR_ssh_username=core #default user is centos 
