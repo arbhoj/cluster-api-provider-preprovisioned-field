@@ -279,7 +279,7 @@ Sample run with a hint --os-hint=flag required to deploy to flatcar
 
 
 ```
-
+sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp.yaml 
 ```
 
 6. Deploy DKP Base Cluster

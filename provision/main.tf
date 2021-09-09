@@ -695,6 +695,11 @@ kubectl apply -f ${path.cwd}/provision/${var.cluster_name}-preprovisioned_invent
 #Create the manifest files for deploying the konvoy to the cluster
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
 
+#Set cloud-provider to aws
+
+sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
+
+
 #Note if deploying a flatcar cluster then add the --os-hint=flatcar flag like this:
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
 
