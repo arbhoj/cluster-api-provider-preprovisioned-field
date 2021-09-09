@@ -676,7 +676,7 @@ output "z_run_this" {
 ###Build Server######
 ###Run the following from the konvoy-image builder dir https://github.com/mesosphere/konvoy-image-builder
 
-./konvoy-image provision --inventory-file ${path.cwd}/provider/inventory.yaml  images/generic/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
+./konvoy-image provision --inventory-file ${path.cwd}/provision/inventory.yaml  images/generic/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
 
 #####################
 
