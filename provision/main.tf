@@ -690,7 +690,7 @@ output "z_run_this" {
 kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=${path.cwd}/provision/${var.ssh_private_key_file}
 
 #Create the pre-provisioned inventory resources
-kubectl apply -f ${path.cwd}/provision/${var.cluster_name}preprovisioned_inventory.yaml
+kubectl apply -f ${path.cwd}/provision/${var.cluster_name}-preprovisioned_inventory.yaml
 
 #Create the manifest files for deploying the konvoy to the cluster
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml

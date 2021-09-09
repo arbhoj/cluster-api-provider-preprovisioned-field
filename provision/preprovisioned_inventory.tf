@@ -10,7 +10,7 @@ resource "local_file" "capi_inventory" {
 apiVersion: infrastructure.cluster.konvoy.d2iq.io/v1alpha1
 kind: PreprovisionedInventory
 metadata:
-  name: $CLUSTER_NAME-control-plane
+  name: ${var.cluster_name}-control-plane
   labels:
     cluster.x-k8s.io/cluster-name: ${var.cluster_name}
 spec:
@@ -33,7 +33,7 @@ spec:
 apiVersion: infrastructure.cluster.konvoy.d2iq.io/v1alpha1
 kind: PreprovisionedInventory
 metadata:
-  name: $CLUSTER_NAME-md-0
+  name: ${var.cluster_name}-md-0
 spec:
   hosts:
 %{ for index, wk in aws_instance.worker ~}
