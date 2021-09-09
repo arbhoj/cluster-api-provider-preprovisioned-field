@@ -15,16 +15,16 @@ all:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
     ansible_ssh_key_name: ${var.ssh_private_key_file}
     registry_server: "${aws_instance.registry[0].private_ip}:5000" #Note: Use the private ip of the registry server
-hosts:
+  hosts:
 %{ for index, cp in aws_instance.control_plane ~}
-  ${cp.private_ip}:
-    ansible_host: ${cp.public_ip}
-    node_pool: control
+    ${cp.private_ip}:
+      ansible_host: ${cp.public_ip}
+      node_pool: control
 %{ endfor ~}
 %{ for index, wk in aws_instance.worker ~}
-  ${wk.private_ip}:
-    ansible_host: ${wk.public_ip}
-    node_pool: worker
+    ${wk.private_ip}:
+      ansible_host: ${wk.public_ip}
+      node_pool: worker
 %{ endfor ~}
 EOF
 }
