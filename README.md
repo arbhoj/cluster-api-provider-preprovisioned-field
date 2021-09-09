@@ -29,6 +29,10 @@ export TF_VAR_ssh_username=core #default user is centos
 export TF_VAR_create_iam_instance_profile=true
 export TF_VAR_ssh_private_key_file=../$TF_VAR_cluster_name
 export TF_VAR_ssh_public_key_file=../$TF_VAR_cluster_name.pub
+
+###export TF_VAR_create_extra_worker_volumes=true #To optionally attach additional disks to worker nodes for PV creation
+###export TF_VAR_extra_volume_size=<desired_disk_size_in_GB> #Default value is 500
+###export TF_VAR_ansible_python_interpreter=/opt/bin/python ##Set this for flatcar to generate the correct inventory variables
 ```
 
 6. Load ssh private key into ssh-agent

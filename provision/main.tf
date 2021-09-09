@@ -32,6 +32,18 @@ variable "registry_ami" {
   default     = "ami-0686851c4e7b1a8e1"
 }
 
+variable "create_extra_worker_volumes" {
+  description = "Whether to create extra volumes for worker nodes"
+  default     = false
+}
+
+
+variable "extra_volume_size" {
+description = "Size of the extra volume that will be attached to all the worker nodes"
+  default     = 500
+}
+
+
 variable "skip_metadata_api_check" {
   description = "Prevents Terraform from authenticating via the Metadata API"
   default     = false
@@ -181,6 +193,11 @@ variable "node_ami" {
 }
 
 variable "ssh_username" {
+  description = "The user for connecting to the instance over ssh"
+  default = "centos"
+}
+
+variable "ssh_registry_username" {
   description = "The user for connecting to the instance over ssh"
   default = "centos"
 }
@@ -510,6 +527,32 @@ resource "aws_instance" "worker" {
 }
 
 
+resource "aws_ebs_volume" "worker_extra_volume" {
+  count = var.create_extra_worker_volumes ? var.worker_node_count: 0
+  availability_zone = var.aws_availability_zones[0]
+  size= var.extra_volume_size
+  tags = "${merge(
+    var.tags,
+    tomap({
+      "Name": "${local.cluster_name}-worker-node-${count.index}",
+      "konvoy/nodeRoles": "worker_node",
+      }
+    )
+  )}"
+}
+
+resource "aws_volume_attachment" "worker_extra_volume" {
+  count = var.create_extra_worker_volumes ? var.worker_node_count: 0
+  device_name  = "/dev/sdh"
+  volume_id    = element(aws_ebs_volume.worker_extra_volume.*.id, count.index)
+  instance_id  = element(aws_instance.worker.*.id, count.index)
+  force_detach = true
+
+  lifecycle {
+    ignore_changes = [instance_id]
+  }
+}
+
 resource "aws_instance" "registry" {
   count                       = 1
   vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
@@ -547,7 +590,7 @@ resource "aws_instance" "registry" {
 
     connection {
       type = "ssh"
-      user = "centos"
+      user = var.ssh_registry_username
       agent = true
       host = self.public_dns
       private_key = file(var.ssh_private_key_file)
@@ -624,4 +667,45 @@ output "worker_public_ips" {
 
 output "registry_ip" {
   value = aws_instance.registry.*.public_ip
+}
+
+output "z_run_this" {
+
+  value = <<EOF
+
+###Build Server######
+###Run the following from the konvoy-image builder dir https://github.com/mesosphere/konvoy-image-builder
+
+./konvoy-image provision --inventory-file provider/inventory.yaml  images/generic/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
+
+#####################
+
+###Deploy Server#####
+###Run these from the directory where DKP binary has been downloaded
+
+#First create a bootstrap cluster 
+./dkp create bootstrap
+
+#Once bootstrap cluster is created add the secret containing the private key to connect to the hosts
+kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=${path.cwd}/provision/${var.ssh_private_key_file}
+
+#Create the pre-provisioned inventory resources
+kubectl apply -f ${path.cwd}/provision/${var.cluster_name}preprovisioned_inventory.yaml
+
+#Create the manifest files for deploying the konvoy to the cluster
+./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
+
+#Note if deploying a flatcar cluster then add the --os-hint=flatcar flag like this:
+./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
+
+##Update all occurances of cloud-provider="" to cloud-provider=aws
+##Now apply the deploy manifest to the bootstrap cluster
+kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
+
+##Run the following commands to view the status of the deployment
+./dkp describe cluster -c $CLUSTER_NAME
+kubectl logs -f -n cappp-system deploy/cappp-controller-manager
+
+EOF
+
 }
