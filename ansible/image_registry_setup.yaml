@@ -6,7 +6,7 @@
   - name: Disable SELinux
     ansible.posix.selinux:
       state: disabled
-  - name: Install packages
+  - name: Install yum utils
     yum:
       name:
       - yum-utils

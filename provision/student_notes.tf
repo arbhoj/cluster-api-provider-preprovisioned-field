@@ -27,13 +27,11 @@ kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privat
 kubectl apply -f /home/centos/provision/${var.cluster_name}-preprovisioned_inventory.yaml
 
 #Create the manifest files for deploying the konvoy to the cluster
-./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
-
 #Note if deploying a flatcar cluster then add the --os-hint=flatcar flag like this:
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
 
 ##Update all occurances of cloud-provider="" to cloud-provider=aws
-sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
+sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
 
 ##Now apply the deploy manifest to the bootstrap cluster
 kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
