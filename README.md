@@ -3,18 +3,18 @@
 
 ## 2.0 Pre-reqs
 1. Download [konvoy-image-builder](https://github.com/mesosphere/konvoy-image-builder)
-2. Download the [DKP Release](https://github.com/mesosphere/konvoy2/releases)
+2. Download the [DKP Release](https://github.com/mesosphere/konvoy2/releases) and extract the DKP binary directly under the $HOME dir
 
 ## Deploy Infrastructure 
 1. Configure AWS Credentials
 2. Set cluster name
 ```
 export USERID=$USER
-export TF_VAR_cluster_name=$USERID-dkp20
+export CLUSTER_NAME=$USERID-dkp20
 ```
 3. Generate key pair with the same name as the cluster
 ```
-ssh-keygen -q -t rsa -N '' -f $TF_VAR_cluster_name <<<y 2>&1 >/dev/null
+ssh-keygen -q -t rsa -N '' -f $CLUSTER_NAME <<<y 2>&1 >/dev/null
 ```
 4. Initialize terrafom
 ```
@@ -31,8 +31,9 @@ export TF_VAR_node_ami=ami-0e6702240b9797e12 ##Equivalent ami in us-east-1 ami-0
 export TF_VAR_registry_ami=ami-0686851c4e7b1a8e1 #Recommend using centos/rhel ami's for the registry server. Equivalent ami in us-east-1 is ami-00e87074e52e6c9f9. Name to search: CentOS 7.9.2009 x86_64
 export TF_VAR_ssh_username=core #default user is centos. Set it to core as shown here for flatcar 
 export TF_VAR_create_iam_instance_profile=true
-export TF_VAR_ssh_private_key_file=../$TF_VAR_cluster_name
-export TF_VAR_ssh_public_key_file=../$TF_VAR_cluster_name.pub
+export TF_VAR_cluster_name=$CLUSTER_NAME
+export TF_VAR_ssh_private_key_file=../$CLUSTER_NAME
+export TF_VAR_ssh_public_key_file=../$CLUSTER_NAME.pub
 
 
 ###export TF_VAR_ansible_python_interpreter=/opt/bin/python ##Set this for flatcar to generate the correct inventory variables
@@ -40,6 +41,28 @@ export TF_VAR_ssh_public_key_file=../$TF_VAR_cluster_name.pub
 ###export TF_VAR_extra_volume_size=<desired_disk_size_in_GB> #Default value is 500
 ```
 
+Alternatively create  tfvars file and pass that as an input to the terraform using the -var-file flag
+```
+cat <<EOF > $USERID.tfvars
+tags = {
+  "owner" : "abhoj",
+  "expiration" : "32h"
+}
+aws_region = "us-west-2"
+aws_availability_zones = ["us-west-2c"]
+node_ami = "ami-0e6702240b9797e12"
+registry_ami = "ami-0686851c4e7b1a8e1"
+ansible_python_interpreter = "/opt/bin/python"
+ssh_username = "core"
+create_iam_instance_profile = true
+cluster_name = "$CLUSTER_NAME"
+ssh_private_key_file = "../$CLUSTER_NAME"
+ssh_public_key_file = "../$CLUSTER_NAME.pub"
+create_extra_worker_volumes = true
+extra_volume_size = 500
+EOF
+
+```
 6. Load ssh private key into ssh-agent
 
 ```
@@ -51,6 +74,12 @@ ssh-add $TF_VAR_cluster_name
 
 ```
 terraform -chdir=provision apply -auto-approve
+```
+
+Or if using a tfvars files
+
+```
+terraform -chdir=provision apply -auto-approve -var-file ../$USERID.tfvars
 ```
 
 ## Configure Infrastructure and Prepare to run konvoy-image-builer
