@@ -121,7 +121,7 @@
   - name: Copy Student notes
     copy:
       src: ../provision/dkp_2_install.txt
-      dest: /home/centos/provision/dkp_2_install.txt
+      dest: /home/centos/{{cluster_name}}-student-notes.txt
       owner: centos
       group: centos
       mode: 0600

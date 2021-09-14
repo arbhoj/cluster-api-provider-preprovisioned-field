@@ -752,7 +752,7 @@ helm repo update
 helm install -n kommander --create-namespace kommander-bootstrap kommander-bootstrap-\$\{VERSION\}.tgz --version=\$\{VERSION\}
 
 #########################
-Note: For Lab environment view the instructions in /home/centos/dkp_2_install.txt on the registry/bootstrap server
+Note: For Lab environment view the instructions in /home/centos/{{local.cluster_name}}-student-notes.txt on the registry/bootstrap server
 #########################
 
 EOF
