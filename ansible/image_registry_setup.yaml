@@ -68,11 +68,18 @@
       url: "https://github.com/mesosphere/konvoy-image-builder/releases/download/v1.0.0/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
       dest: "/tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
     become_user: centos
+    tags:
+    - test
   - name: Extract Konvoy Image Builder
-    command: "tar -xf /tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz -C /home/centos/"
-    args:
-      creates: /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux
-    become_user: centos
+    unarchive:
+      src: "/tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
+      dest: /home/centos
+      owner: centos
+      mode: 0700
+      remote_src: yes
+    become_user: centos    
+    tags:
+    - test
   - name: Rename to konvoy-image-builder
     command: mv /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux /home/centos/konvoy-image-builder
     args:
@@ -82,6 +89,7 @@
       url: "https://dl.k8s.io/release/{{kubectl_version}}/bin/linux/amd64/kubectl"
       dest: /usr/local/bin/kubectl
       mode: 0711
+#URL is not reachable without signing in hence for now we will copy the file in the ansible controller under the home dir
 #  - name: Download DKP Installer
 #    get_url:
 #      url: "https://github.com/mesosphere/konvoy2/releases/download/{{dkp_version}}/dkp_{{dkp_version}}_linux_amd64.tar.gz"
@@ -89,13 +97,26 @@
 #    become_user: centos
 #    tags:
 #    - test 
-#  - name: Extract DKP Installer
-#    command: "tar -xf /tmp/dkp_{{dkp_version}}_linux_amd64.tar.gz -C /home/centos/"
-#    args:
-#      creates: /home/centos/dkp
-#    become_user: centos
-#    tags:
-#    - test
+  - name: Copy DKP Installer tar from Ansible Controller
+    copy:
+      src: ~/dkp_{{dkp_version}}_linux_amd64.tar.gz
+      dest: /tmp
+      owner: centos
+      group: centos
+      mode: 0700
+    become_user: centos
+    tags: 
+    - test  
+  - name: Extract Konvoy DKP
+    unarchive:
+      src: "/tmp/dkp_{{dkp_version}}_linux_amd64.tar.gz"
+      dest: /home/centos
+      owner: centos
+      mode: 0700
+      remote_src: yes
+    become_user: centos
+    tags: 
+    - test 
   - name: Create a directory if it does not exist
     file:
       path: /home/centos/provision
