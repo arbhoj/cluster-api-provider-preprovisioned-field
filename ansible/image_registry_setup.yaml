@@ -68,8 +68,6 @@
       url: "https://github.com/mesosphere/konvoy-image-builder/releases/download/v1.0.0/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
       dest: "/tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
     become_user: centos
-    tags:
-    - test
   - name: Extract Konvoy Image Builder
     unarchive:
       src: "/tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
@@ -78,8 +76,6 @@
       mode: 0700
       remote_src: yes
     become_user: centos    
-    tags:
-    - test
   - name: Rename to konvoy-image-builder
     command: mv /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux /home/centos/konvoy-image-builder
     args:
@@ -105,8 +101,6 @@
       group: centos
       mode: 0700
     become_user: centos
-    tags: 
-    - test  
   - name: Extract Konvoy DKP
     unarchive:
       src: "/tmp/dkp_{{dkp_version}}_linux_amd64.tar.gz"
@@ -115,8 +109,6 @@
       mode: 0700
       remote_src: yes
     become_user: centos
-    tags: 
-    - test 
   - name: Create a directory if it does not exist
     file:
       path: /home/centos/provision
@@ -157,5 +149,3 @@
       group: centos
       mode: 0600
     become_user: centos
-    tags:
-    - test
