@@ -149,4 +149,11 @@
       owner: centos
       group: centos
       mode: 0600
+  - name: Copy Key to Konvoy Image Builder Dir
     become_user: centos
+    copy:
+      src: "{{ansible_ssh_private_key_file}}"
+      dest: /home/centos/konvoy-image-builder
+      owner: centos
+      group: centos
+      mode: 0600
