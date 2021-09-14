@@ -1,0 +1,140 @@
+---
+- hosts: registry
+  gather_facts: no
+  become: yes
+  tasks: 
+  - name: Disable SELinux
+    ansible.posix.selinux:
+      state: disabled
+  - name: Install packages
+    yum:
+      name:
+      - yum-utils
+  - name: Configure Docker Repo
+    command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  - name: Install packages
+    yum:
+      name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - wget
+      - git
+      - python-docker
+      - curl
+      state: present
+  - name: Create docker group
+    group:
+      name: docker
+      state: present
+  - name: Add centos user to docker group    
+    user: 
+      name: centos
+      groups: docker
+      append: yes 
+  - name: Start docker service
+    service:
+      name: docker
+      state: started
+      enabled: yes
+  - name: Create ssl certs for image registry
+    script: create_registrycerts.sh
+    args:
+      creates: ca.crt
+  - name: Start Registry Server
+    docker_container:
+      name: dkpimageregistry
+      image: registry:2
+      state: started
+      ports:
+      - "5000:5000"
+      volumes:
+      - /home/centos/certs:/certs
+      env:
+        REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
+        REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
+        REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"
+  - name: Download helm_install Script
+    get_url:
+      url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+      dest: /tmp/get_helm.sh
+      mode: '700' 
+  - name: Execute script to install helm
+    command: /tmp/get_helm.sh
+    args:
+      creates: /usr/local/bin/helm
+  - name: Download Konvoy Image Builder
+    get_url:
+      url: "https://github.com/mesosphere/konvoy-image-builder/releases/download/v1.0.0/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
+      dest: "/tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz"
+    become_user: centos
+  - name: Extract Konvoy Image Builder
+    command: "tar -xf /tmp/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux.tar.gz -C /home/centos/"
+    args:
+      creates: /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux
+    become_user: centos
+  - name: Rename to konvoy-image-builder
+    command: mv /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux /home/centos/konvoy-image-builder
+    args:
+      creates: /home/centos/konvoy-image-builder
+  - name: Download Kubectl
+    get_url:
+      url: "https://dl.k8s.io/release/{{kubectl_version}}/bin/linux/amd64/kubectl"
+      dest: /usr/local/bin/kubectl
+      mode: 0711
+#  - name: Download DKP Installer
+#    get_url:
+#      url: "https://github.com/mesosphere/konvoy2/releases/download/{{dkp_version}}/dkp_{{dkp_version}}_linux_amd64.tar.gz"
+#      dest: "/tmp/dkp_{{dkp_version}}_linux_amd64.tar.gz"
+#    become_user: centos
+#    tags:
+#    - test 
+#  - name: Extract DKP Installer
+#    command: "tar -xf /tmp/dkp_{{dkp_version}}_linux_amd64.tar.gz -C /home/centos/"
+#    args:
+#      creates: /home/centos/dkp
+#    become_user: centos
+#    tags:
+#    - test
+  - name: Create a directory if it does not exist
+    file:
+      path: /home/centos/provision
+      state: directory
+      mode: 0755
+      owner: centos
+      group: centos
+    become_user: centos
+  - name: Copy Student notes
+    copy:
+      src: ../provision/dkp_2_install.txt
+      dest: /home/centos/provision/dkp_2_install.txt
+      owner: centos
+      group: centos
+      mode: 0600
+    become_user: centos
+  - name: Copy Inventory File
+    copy:
+      src: ../provision/inventory2.yaml
+      dest: /home/centos/provision/inventory.yaml
+      owner: centos
+      group: centos
+      mode: 0600
+    become_user: centos
+  - name: Copy Preprovisioned Inventory
+    copy:
+      src: "../provision/{{cluster_name}}-preprovisioned_inventory2.yaml"
+      dest: /home/centos/provision/{{cluster_name}}-preprovisioned_inventory.yaml
+      owner: centos
+      group: centos
+      mode: 0600
+    become_user: centos
+  - name: Copy Key
+    copy:
+      src: "{{ansible_ssh_private_key_file}}"
+      dest: /home/centos
+      owner: centos
+      group: centos
+      mode: 0600
+    become_user: centos
+    tags:
+    - test

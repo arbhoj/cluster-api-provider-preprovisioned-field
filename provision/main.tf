@@ -2,6 +2,7 @@ terraform {
   required_version = ">= 0.12"
 }
 
+
 locals {
   public_subnet_range        = var.vpc_cidr
   cluster_name               = var.cluster_name
@@ -10,6 +11,30 @@ locals {
 provider "aws" {
   region                  = var.aws_region
   skip_metadata_api_check = var.skip_metadata_api_check
+}
+
+variable konvoy_image_builder_version {
+  description = "Version for konvoy image builder"
+  default = "v1.0.0"   
+
+}
+
+variable dkp_version {
+  description = "DKP version"
+  default = "v2.0.0"
+
+}
+
+variable kommander_version {
+  description = "Kommander version"
+  default = "v2.0.0"
+
+}
+
+variable kubectl_version { 
+  description = "Kubectl Version"
+  default = "v1.22.0"
+
 }
 
 variable "control_plane_count" {
@@ -675,12 +700,12 @@ output "z_run_this" {
 
 ###Build Server######
 ###Run the following from the konvoy-image builder dir https://github.com/mesosphere/konvoy-image-builder
+cd /home/centos/konvoy-image-builder
+/konvoy-image provision --inventory-file /home/centos/provision/inventory.yaml  images/ami/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
 
-./konvoy-image provision --inventory-file ${path.cwd}/provision/inventory.yaml  images/generic/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
-
-#####################
-
-###Deploy Server#####
+########################
+###Deploy DKP Cluster###
+########################
 ###Run these from the directory where DKP binary has been downloaded
 
 #First create a bootstrap cluster 
@@ -695,21 +720,40 @@ kubectl apply -f ${path.cwd}/provision/${var.cluster_name}-preprovisioned_invent
 #Create the manifest files for deploying the konvoy to the cluster
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
 
-#Set cloud-provider to aws
-
-sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
-
-
 #Note if deploying a flatcar cluster then add the --os-hint=flatcar flag like this:
 ./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
 
 ##Update all occurances of cloud-provider="" to cloud-provider=aws
+#Set cloud-provider to aws
+sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
+
 ##Now apply the deploy manifest to the bootstrap cluster
 kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
 
 ##Run the following commands to view the status of the deployment
 ./dkp describe cluster -c $CLUSTER_NAME
 kubectl logs -f -n cappp-system deploy/cappp-controller-manager
+
+##After 5 minutes or so if there is no critical error in the above, run the following command to get the admin kubeconfig of the provisioned DKP cluster
+./dkp get kubeconfig -c $CLUSTER_NAME > admin.conf
+
+##Set admin.conf as the current KUBECONFIG
+export KUBECONFIG=$(pwd)/admin.conf
+
+##Run the following to make sure all the nodes in the DKP cluster are in Ready state
+kubectl get nodes
+
+########################
+###Deploy Kommander#####
+########################
+export VERSION=${var.kommander_version}
+helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
+helm repo update
+helm install -n kommander --create-namespace kommander-bootstrap kommander-bootstrap-\$\{VERSION\}.tgz --version=\$\{VERSION\}
+
+#########################
+Note: For Lab environment view the instructions in /home/centos/dkp_2_install.txt on the registry/bootstrap server
+#########################
 
 EOF
 

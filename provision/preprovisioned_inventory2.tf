@@ -1,10 +1,10 @@
-resource "local_file" "capi_inventory" {
-  filename = "${var.cluster_name}-preprovisioned_inventory.yaml"
+resource "local_file" "capi_inventory_2" {
+  filename = "${var.cluster_name}-preprovisioned_inventory2.yaml"
 
   depends_on = [aws_instance.worker]
 
   provisioner "local-exec" {
-    command = "chmod 644 ${var.cluster_name}-preprovisioned_inventory.yaml"
+    command = "chmod 644 ${var.cluster_name}-preprovisioned_inventory2.yaml"
   }
   content = <<EOF
 apiVersion: infrastructure.cluster.konvoy.d2iq.io/v1alpha1

@@ -1,10 +1,10 @@
-resource "local_file" "ansible_inventory" {
-  filename = "${var.inventory_path}"
+resource "local_file" "ansible_inventory_2" {
+  filename = "inventory2.yaml"
 
   depends_on = [aws_instance.worker]
 
   provisioner "local-exec" {
-    command = "chmod 644 ${var.inventory_path}"
+    command = "chmod 644 inventory2.yaml"
   }
   content = <<EOF
 all:
@@ -19,12 +19,10 @@ all:
   hosts:
 %{ for index, cp in aws_instance.control_plane ~}
     ${cp.private_ip}:
-      ansible_host: ${cp.public_ip}
       node_pool: control
 %{ endfor ~}
 %{ for index, wk in aws_instance.worker ~}
     ${wk.private_ip}:
-      ansible_host: ${wk.public_ip}
       node_pool: worker
 %{ endfor ~}
 EOF

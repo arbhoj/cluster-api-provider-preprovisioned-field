@@ -1,6 +1,10 @@
 
 # Deploy DKP on pre-provisioned AWS Infrastructure
 
+## 2.0 Pre-reqs
+1. Download [konvoy-image-builder](https://github.com/mesosphere/konvoy-image-builder)
+2. Download the [DKP Release](https://github.com/mesosphere/konvoy2/releases)
+
 ## Deploy Infrastructure 
 1. Configure AWS Credentials
 2. Set cluster name
@@ -21,18 +25,19 @@ terraform -chdir=provision init
 
 ```
 export TF_VAR_tags='{"owner":"abhoj","expiration":"32h"}'
-export TF_VAR_aws_region="us-east-1"
-export TF_VAR_aws_availability_zones='["us-east-1b"]' # We currently only support one subnet and one az to keep things simple
-export TF_VAR_node_ami=ami-0e6702240b9797e12
-export TF_VAR_registry_ami=ami-0686851c4e7b1a8e1
-export TF_VAR_ssh_username=core #default user is centos 
+export TF_VAR_aws_region="us-west-2"
+export TF_VAR_aws_availability_zones='["us-west-2c"]' # We currently only support one subnet and one az to keep things simple
+export TF_VAR_node_ami=ami-0e6702240b9797e12 ##Equivalent ami in us-east-1 ami-048e383eb95db98c4. Name to search: Flatcar-stable-2905.2.1-hvm
+export TF_VAR_registry_ami=ami-0686851c4e7b1a8e1 #Recommend using centos/rhel ami's for the registry server. Equivalent ami in us-east-1 is ami-00e87074e52e6c9f9. Name to search: CentOS 7.9.2009 x86_64
+export TF_VAR_ssh_username=core #default user is centos. Set it to core as shown here for flatcar 
 export TF_VAR_create_iam_instance_profile=true
 export TF_VAR_ssh_private_key_file=../$TF_VAR_cluster_name
 export TF_VAR_ssh_public_key_file=../$TF_VAR_cluster_name.pub
 
+
+###export TF_VAR_ansible_python_interpreter=/opt/bin/python ##Set this for flatcar to generate the correct inventory variables
 ###export TF_VAR_create_extra_worker_volumes=true #To optionally attach additional disks to worker nodes for PV creation
 ###export TF_VAR_extra_volume_size=<desired_disk_size_in_GB> #Default value is 500
-###export TF_VAR_ansible_python_interpreter=/opt/bin/python ##Set this for flatcar to generate the correct inventory variables
 ```
 
 6. Load ssh private key into ssh-agent
@@ -48,69 +53,18 @@ ssh-add $TF_VAR_cluster_name
 terraform -chdir=provision apply -auto-approve
 ```
 
-This will provision the cluster and provide an output like this:
-```
-control_plane_public_ips = [
-  "52.12.47.139",
-  "34.219.172.160",
-  "54.218.104.166",
-]
-kube_apiserver_address = "tf-lb-20210902024015538800000001-534661084.us-west-2.elb.amazonaws.com"
-registry_ip = [
-  "18.237.199.174",
-]
-worker_public_ips = [
-  "54.185.70.218",
-  "54.203.84.24",
-  "35.163.32.229",
-  "52.34.221.5",
-]
-```
-
 ## Configure Infrastructure and Prepare to run konvoy-image-builer
  
-###  Build inventory files
-  > Note: We will automate these soon but for now just create them manually using the values from terraform output
+###  Inventory files
+  > Note: These are now automatically generated
           
  We are currenty creating two independent inventory files 
  1. inventory.yaml that will be used for the actual cluster and also the konvoy-image-builder
  2. inventory_registry.yaml that is just used for setting registry up. Made sense to keep this separate as we want to keep the same inventory for konvoy-image-builder
- 
- Examples:
- inventory.yaml (same format as that used by konvoy-image-builder)
-```
-all:
-  vars:
-    ansible_user: core
-    ansible_ssh_key_name: ./arvindbhoj-dkp20
-    ansible_python_interpreter: /opt/bin/python #Note: This is just for flatcar. The default /usr/bin/python should work for rhel/centos
-    python_path: /opt/bin/builder-env/site-packages #Note: This is just for flatcar. The default /usr/lib64/python2.7/site-packages should work for rhel/centos
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-  hosts:
-    52.12.47.139:
-    34.219.172.160:
-    54.218.104.166:
-    54.185.70.218:
-    54.203.84.24:
-    35.163.32.229:
-    52.34.221.5:
 
-```
-
-  inventory_registry.yaml
-
-```
-all:
-  vars:
-    ansible_user: centos
-    ansible_ssh_key_name: ./arvindbhoj-dkp20
-registry:
-  hosts:
-    18.237.199.174:
-```
-
-### Run playbook to configure Image Registry 
-
+### Run playbook to configure Image Registry
+  > Note: This is only required if a local registry needs to be configured 
+  
 This playbook will:
 - Intall required packages like docker, wget etc. on the registry server
 - Configure docker to be run without sudo
@@ -119,19 +73,21 @@ This playbook will:
 > Once the process to push DKP images to the registry server is more refined we will include that option as well
 
 ```
-ansible-playbook -i inventory_registry.yaml ansible/image_registry_setup.yaml
+ansible-playbook -i provision/inventory_registry.yaml ansible/image_registry_setup.yaml
 ```
 
 ### Run playbook to configure disks for localvolumes
 This playbook will configure and mount the disks to be used by the localvolumeprovisioner
 
 ```
-ansible-playbook -i inventory_registry.yaml ansible/configure_disks.yaml
+ansible-playbook -i provision/inventory_registry.yaml ansible/configure_disks.yaml
 ```
 
-Push images to the registry. Note: Currently only Kommander images are packaged
-
-> Note: Do this on the registry server
+Push images to the registry. 
+> Notes: 
+- Only do this if configuring a local registry server. Else skip to the next step
+- Currently only Kommander images are packaged
+- Do this on the registry server
 ```
 export VERSION=v2.0.0
 wget "https://downloads.mesosphere.com/kommander/airgapped/${VERSION}/kommander_image_bundle_${VERSION}_linux_amd64.tar" -O kommander-image-bundle.tar
