@@ -37,11 +37,11 @@ sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cl
 kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
 
 ##Run the following commands to view the status of the deployment
-./dkp describe cluster -c $CLUSTER_NAME
+./dkp describe cluster -c ${var.cluster_name}
 kubectl logs -f -n cappp-system deploy/cappp-controller-manager
 
 ##After 5 minutes or so if there is no critical error in the above, run the following command to get the admin kubeconfig of the provisioned DKP cluster
-./dkp get kubeconfig -c $CLUSTER_NAME > admin.conf
+./dkp get kubeconfig -c ${var.cluster_name} > admin.conf
 
 ##Set admin.conf as the current KUBECONFIG
 export KUBECONFIG=$(pwd)/admin.conf
