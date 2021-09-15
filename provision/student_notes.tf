@@ -49,6 +49,12 @@ export KUBECONFIG=$(pwd)/admin.conf
 ##Run the following to make sure all the nodes in the DKP cluster are in Ready state
 kubectl get nodes
 
+###Optional: Deploy awsebscsiprovisioner###
+helm repo add d2iq-stable https://mesosphere.github.io/charts/stable  
+helm repo update
+helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml 
+kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+
 ###Deploy Kommander#####
 export VERSION=${var.kommander_version}
 helm repo add d2iq-stable https://mesosphere.github.io/charts/stable

@@ -157,3 +157,11 @@
       owner: centos
       group: centos
       mode: 0600
+  - name: Copy awsebscsiprovisioner_values.yaml
+    become_user: centos
+    copy:
+      src: "awsebscsiprovisioner_values.yaml"
+      dest: /home/centos/
+      owner: centos
+      group: centos
+      mode: 0600
