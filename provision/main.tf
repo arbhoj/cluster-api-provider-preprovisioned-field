@@ -743,16 +743,22 @@ export KUBECONFIG=$(pwd)/admin.conf
 ##Run the following to make sure all the nodes in the DKP cluster are in Ready state
 kubectl get nodes
 
+###Optional: Deploy awsebscsiprovisioner###
+helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
+helm repo update
+helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml
+kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+
 ########################
 ###Deploy Kommander#####
 ########################
 export VERSION=${var.kommander_version}
-helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
+helm repo add kommander https://mesosphere.github.io/kommander/charts
 helm repo update
-helm install -n kommander --create-namespace kommander-bootstrap kommander-bootstrap-\$\{VERSION\}.tgz --version=\$\{VERSION\}
+helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
 
 #########################
-Note: For Lab environment view the instructions in /home/centos/{{local.cluster_name}}-student-notes.txt on the registry/bootstrap server
+Note: For Lab environment view the instructions in /home/centos/${local.cluster_name}-student-notes.txt on the registry/bootstrap server
 ssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}
 #########################
 

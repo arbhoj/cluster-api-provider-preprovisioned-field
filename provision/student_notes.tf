@@ -21,7 +21,7 @@ cd /home/centos
 ./dkp create bootstrap
 
 #Once bootstrap cluster is created add the secret containing the private key to connect to the hosts
-kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=/home/centos/provision/${var.ssh_private_key_file}
+kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=/home/centos/${var.ssh_private_key_file}
 
 #Create the pre-provisioned inventory resources
 kubectl apply -f /home/centos/provision/${var.cluster_name}-preprovisioned_inventory.yaml
@@ -57,9 +57,8 @@ kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storage
 
 ###Deploy Kommander#####
 export VERSION=${var.kommander_version}
-helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
+helm repo add kommander https://mesosphere.github.io/kommander/charts
 helm repo update
-helm install -n kommander --create-namespace kommander-bootstrap kommander-bootstrap-\$\{VERSION\}.tgz --version=\$\{VERSION\}\
-
+helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
 EOF
 }
