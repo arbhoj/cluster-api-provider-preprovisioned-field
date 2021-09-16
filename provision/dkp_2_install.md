@@ -1,4 +1,4 @@
-# Student Handbook student1-dkp
+# Student Handbook student3-dka100
 
 ## Cluster Details
 
@@ -8,35 +8,25 @@ Bootstrap Node:
 Control Plane Nodes:
 
 ```
-    10.0.191.210:
-      ansible_host: 18.236.218.207
-      node_pool: control
+    10.0.9.75:
 ```
 
 Worker Nodes:
 ```
-    10.0.138.182:
-      ansible_host: 54.218.246.205
-      node_pool: worker
-    10.0.77.181:
-      ansible_host: 54.185.65.42
-      node_pool: worker
-    10.0.232.161:
-      ansible_host: 54.149.93.234
-      node_pool: worker
-    10.0.121.171:
-      ansible_host: 54.149.134.41
-      node_pool: worker
+    10.0.249.181:
+    10.0.119.126:
+    10.0.209.209:
+    10.0.94.222:
 ```
 
 Control Plane LoadBalancer:
 ```
-tf-lb-20210916042904750500000006-1922352621.us-west-2.elb.amazonaws.com 
+tf-lb-20210916213218247300000006-610486558.us-west-2.elb.amazonaws.com 
 ```
 
 ssh-key:
 ```
-student1-dkp
+student3-dka100
 ```
 ## Prepare the Machines
 
@@ -68,28 +58,28 @@ First create a bootstrap cluster
 Once bootstrap cluster is created add the secret containing the private key to connect to the hosts
 
 ```
-kubectl create secret generic student1-dkp-ssh-key --from-file=ssh-privatekey=/home/centos/student1-dkp
+kubectl create secret generic student3-dka100-ssh-key --from-file=ssh-privatekey=/home/centos/student3-dka100
 ```
 
 Now, create the pre-provisioned inventory resources
 
 ```
-kubectl apply -f /home/centos/provision/student1-dkp-preprovisioned_inventory.yaml
+kubectl apply -f /home/centos/provision/student3-dka100-preprovisioned_inventory.yaml
 ```
 
 Create the manifest files for deploying the konvoy to the cluster
 > Note: The --os-hint=flatcar flag in the following command is required to indicate that that the os of the instances being deployed to is flatcar
 
 ```
-./dkp create cluster preprovisioned --cluster-name student1-dkp --control-plane-endpoint-host tf-lb-20210916042904750500000006-1922352621.us-west-2.elb.amazonaws.com --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-student1-dkp.yaml
+./dkp create cluster preprovisioned --cluster-name student3-dka100 --control-plane-endpoint-host tf-lb-20210916213218247300000006-610486558.us-west-2.elb.amazonaws.com --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-student3-dka100.yaml
 ```
 
 Update all occurances of cloud-provider="" to cloud-provider=aws. This is needed because we will be leveraging aws provider capabilities in this lab for things like services of type LoadBalancer and persistent volumes.
 
 ```
-sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-student1-dkp.yaml
+sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-student3-dka100.yaml
 
-sed -i 's/konvoy.d2iq.io\/csi\:\ local-volume-provisioner/konvoy.d2iq.io\/csi\:\ aws-ebs/' deploy-dkp-student1-dkp.yaml
+sed -i 's/konvoy.d2iq.io\/csi\:\ local-volume-provisioner/konvoy.d2iq.io\/csi\:\ aws-ebs/' deploy-dkp-student3-dka100.yaml
 
 sed -i 's/konvoy.d2iq.io\/provider\:\ preprovisioned/konvoy.d2iq.io\/provider\:\ aws/' deploy-dkp-student1-dkp.yaml
 
@@ -98,20 +88,20 @@ sed -i 's/konvoy.d2iq.io\/provider\:\ preprovisioned/konvoy.d2iq.io\/provider\:\
 Finally apply the deploy manifest to the bootstrap cluster to trigger the cluster deployment
 
 ```
-kubectl apply -f deploy-dkp-student1-dkp.yaml
+kubectl apply -f deploy-dkp-student3-dka100.yaml
 ```
 
 Run the following commands to view the status of the deployment
 
 ```
-./dkp describe cluster -c student1-dkp
+./dkp describe cluster -c student3-dka100
 kubectl logs -f -n cappp-system deploy/cappp-controller-manager
 ```
 
 After 5 minutes or so if there is no critical error in the above, run the following command to get the admin kubeconfig of the provisioned DKP cluster
 
 ```
-./dkp get kubeconfig -c student1-dkp > admin.conf
+./dkp get kubeconfig -c student3-dka100 > admin.conf
 chmod 600 admin.conf
 ```
 

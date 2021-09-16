@@ -48,7 +48,6 @@
       script: create_registrycerts.sh
       args:
         creates: ca.crt
-      become_user: centos
     - name: Start Registry Server
       docker_container:
         name: dkpimageregistry
@@ -62,6 +61,7 @@
           REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
           REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
           REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"
+       ignore_errors: yes
     - name: Download helm_install Script
       get_url:
         url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3

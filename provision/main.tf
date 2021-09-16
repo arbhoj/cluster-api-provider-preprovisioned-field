@@ -583,7 +583,7 @@ resource "aws_volume_attachment" "worker_extra_volume" {
 
 resource "aws_instance" "registry" {
   count                       = 1
-  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id, aws_security_group.konvoy_elb]
+  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id, aws_security_group.konvoy_elb.id]
   subnet_id                   = aws_subnet.konvoy_public.id
   key_name                    = local.cluster_name
   ami                         = var.registry_ami
