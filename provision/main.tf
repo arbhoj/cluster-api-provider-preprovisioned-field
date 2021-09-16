@@ -287,6 +287,9 @@ resource "aws_route_table" "konvoy_public_rt" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.konvoy_gateway.id
   }
+  lifecycle {
+    ignore_changes = [ route, tags ]
+  }
 
   tags = "${merge(
     var.tags,
@@ -634,10 +637,8 @@ resource "aws_instance" "registry" {
 }
 
 
-
-
 resource "aws_security_group" "konvoy_control_plane" {
-  description = "Allow inbound SSH for Konvoy."
+  description = "Allow traffic to konvoy control plane"
   vpc_id      = aws_vpc.konvoy_vpc.id
 
   ingress {
@@ -647,7 +648,14 @@ resource "aws_security_group" "konvoy_control_plane" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = var.tags
+  tags = "${merge(
+  var.tags,
+  tomap({
+      "Name": "${local.cluster_name}-cp"
+    }
+    )
+  )}"
+
 }
 
 resource "aws_elb" "konvoy_control_plane" {

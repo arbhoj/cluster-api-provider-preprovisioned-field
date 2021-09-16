@@ -165,3 +165,17 @@
       owner: centos
       group: centos
       mode: 0600
+  - name: Copy get_cluster_details.sh script 
+    become_user: centos
+    copy:
+      src: "get_cluster_details.sh"
+      dest: /home/centos/
+      owner: centos
+      group: centos
+      mode: 0700
+  - name: Add alias for k and set kubeconfig to konvoy cluster
+    blockinfile:
+      path: /home/centos/.bashrc
+      block: |
+        alias k="kubectl --kubeconfig=/home/centos/admin.conf"
+      marker: "###Added for konvoy cluster###"

@@ -21,7 +21,7 @@ cd /home/centos
 ./dkp create bootstrap
 
 #Once bootstrap cluster is created add the secret containing the private key to connect to the hosts
-kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=/home/centos/${var.ssh_private_key_file}
+kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=/home/centos/${trimprefix(var.ssh_private_key_file, "../")}
 
 #Create the pre-provisioned inventory resources
 kubectl apply -f /home/centos/provision/${var.cluster_name}-preprovisioned_inventory.yaml
@@ -32,6 +32,8 @@ kubectl apply -f /home/centos/provision/${var.cluster_name}-preprovisioned_inven
 
 ##Update all occurances of cloud-provider="" to cloud-provider=aws
 sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
+sed -i 's/konvoy.d2iq.io\/csi\:\ local-volume-provisioner/konvoy.d2iq.io\/csi\:\ aws-ebs/' deploy-dkp-${var.cluster_name}.yaml
+sed -i 's/konvoy.d2iq.io\/provider\:\ preprovisioned/konvoy.d2iq.io\/provider\:\ aws/' deploy-dkp-student1-dkp.yaml
 
 ##Now apply the deploy manifest to the bootstrap cluster
 kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
@@ -42,18 +44,13 @@ kubectl logs -f -n cappp-system deploy/cappp-controller-manager
 
 ##After 5 minutes or so if there is no critical error in the above, run the following command to get the admin kubeconfig of the provisioned DKP cluster
 ./dkp get kubeconfig -c ${var.cluster_name} > admin.conf
+chmod 600 admin.conf
 
 ##Set admin.conf as the current KUBECONFIG
 export KUBECONFIG=$(pwd)/admin.conf
 
 ##Run the following to make sure all the nodes in the DKP cluster are in Ready state
 kubectl get nodes
-
-###Optional: Deploy awsebscsiprovisioner###
-helm repo add d2iq-stable https://mesosphere.github.io/charts/stable  
-helm repo update
-helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml 
-kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
 ###Deploy Kommander#####
 export VERSION=${var.kommander_version}
