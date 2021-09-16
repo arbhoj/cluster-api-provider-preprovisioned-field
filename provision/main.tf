@@ -787,7 +787,7 @@ helm install -n kommander --create-namespace kommander-bootstrap kommander/komma
 ## Cluster Details
 
 Bootstrap Node:
-{aws_instance.registry[0].public_ip}
+${aws_instance.registry[0].public_ip}
 
 Control Plane Nodes:
 %{ for index, cp in aws_instance.control_plane ~}
