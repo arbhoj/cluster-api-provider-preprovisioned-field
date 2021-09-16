@@ -61,7 +61,7 @@
           REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
           REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
           REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"
-       ignore_errors: yes
+      ignore_errors: yes
     - name: Download helm_install Script
       get_url:
         url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3

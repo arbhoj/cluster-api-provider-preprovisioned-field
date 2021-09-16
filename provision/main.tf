@@ -326,6 +326,26 @@ resource "aws_security_group" "konvoy_ssh" {
   )}"
 }
 
+resource "aws_security_group" "registry" {
+  description = "Open port 80 for registry server for serving notes"
+  vpc_id      = aws_vpc.konvoy_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = "${merge(
+  var.tags,
+  tomap({
+      "Name": "${local.cluster_name}-registry"
+    }
+    )
+  )}"
+}
+
+
 resource "aws_security_group" "konvoy_private" {
   description = "Allow all communication between instances"
   vpc_id      = aws_vpc.konvoy_vpc.id
@@ -398,10 +418,8 @@ resource "aws_security_group" "konvoy_elb" {
     }
     )
   )}"
-
-
-
 }
+
 
 
 resource "aws_security_group" "konvoy_egress" {
@@ -583,7 +601,7 @@ resource "aws_volume_attachment" "worker_extra_volume" {
 
 resource "aws_instance" "registry" {
   count                       = 1
-  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id, aws_security_group.konvoy_elb.id]
+  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id, aws_security_group.registry.id]
   subnet_id                   = aws_subnet.konvoy_public.id
   key_name                    = local.cluster_name
   ami                         = var.registry_ami
@@ -772,31 +790,19 @@ Bootstrap Node:
 {aws_instance.registry[0].public_ip}
 
 Control Plane Nodes:
-
-```
 %{ for index, cp in aws_instance.control_plane ~}
     ${cp.private_ip}:
-      ansible_host: ${cp.public_ip}
-      node_pool: control
 %{ endfor ~}
-```
 
 Worker Nodes:
-```
 %{ for index, wk in aws_instance.worker ~}
     ${wk.private_ip}:
-      ansible_host: ${wk.public_ip}
-      node_pool: worker
 %{ endfor ~}
-```
 
 Control Plane LoadBalancer:
-```
 ${aws_elb.konvoy_control_plane.dns_name}
-```
 
 ssh-key:
-```
 ${trimprefix(var.ssh_private_key_file, "../")}
 
 #########################

@@ -12,7 +12,7 @@ resource "local_file" "dkp_2_install_md" {
 ## Cluster Details
 
 Bootstrap Node:
-{aws_instance.registry[0].public_ip}
+${aws_instance.registry[0].public_ip}
 
 Control Plane Nodes:
 
