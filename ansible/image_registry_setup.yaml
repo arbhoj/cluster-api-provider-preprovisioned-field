@@ -110,7 +110,7 @@
         owner: centos
         mode: 0700
         remote_src: yes
-    - name: Create a directory if it does not exist
+    - name: Create provision directory
       file:
         path: /home/centos/provision
         state: directory
@@ -166,6 +166,33 @@
         owner: centos
         group: centos
         mode: 0700
+    - name: Create the notes directory if it does not exist
+      file:
+        path: /home/centos/notes
+        state: directory
+        mode: 0755
+        owner: centos
+        group: centos 
+    - name: Copy dkp_2_install.md
+      copy:
+        src: "../provision/dkp_2_install.md"
+        dest: /home/centos/notes
+        owner: centos
+        group: centos
+        mode: 0600
+      tags:
+      - test
+    - name: Start Notes Server
+      docker_container:
+        name: markdownserver
+        image: thomsch98/markserv
+        state: started
+        ports:
+        - "443:6443"
+        volumes:
+        - /home/centos/notes:/data
+      tags:
+      - test 
     - name: Add alias for k and set kubeconfig to konvoy cluster
       blockinfile:
         path: /home/centos/.bashrc
