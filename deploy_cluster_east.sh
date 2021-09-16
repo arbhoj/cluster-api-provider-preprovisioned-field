@@ -1,11 +1,19 @@
 ##As a convention USERID will be the current dir name
 export USERID=${PWD##*/}
 
-export CLUSTER_NAME=$USERID-dkp
-
+export CLUSTER_NAME=$USERID-dka100
+if test -f "$CLUSTER_NAME"; then
+    echo "$CLUSTER_NAME key already exists. Skipping..."
+else
+    echo "Generating key pair $CLUSTER_NAME and $CLUSTER_NAME.pub"
 ##Generate ssh keys for the cluster
 ssh-keygen -q -t rsa -N '' -f $CLUSTER_NAME <<<y 2>&1 >/dev/null
+fi
 
+if test -f "$USERID.tfvars"; then
+    echo "$USERID.tfvars already exists. Skipping..."
+else
+    echo "Generating $USERID.tfvars"
 ##Generate tfvars file
 cat <<EOF > $USERID.tfvars
 tags = {
@@ -25,5 +33,7 @@ ssh_public_key_file = "../$CLUSTER_NAME.pub"
 create_extra_worker_volumes = true
 extra_volume_size = 10
 EOF
+fi
 
 terraform -chdir=provision init
+terraform -chdir=provision apply -auto-approve -var-file ../$USERID.tfvars

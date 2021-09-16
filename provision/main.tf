@@ -583,7 +583,7 @@ resource "aws_volume_attachment" "worker_extra_volume" {
 
 resource "aws_instance" "registry" {
   count                       = 1
-  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id]
+  vpc_security_group_ids      = [aws_security_group.konvoy_ssh.id, aws_security_group.konvoy_private.id, aws_security_group.konvoy_egress.id, aws_security_group.konvoy_elb]
   subnet_id                   = aws_subnet.konvoy_public.id
   key_name                    = local.cluster_name
   ami                         = var.registry_ami
@@ -765,6 +765,43 @@ helm repo add kommander https://mesosphere.github.io/kommander/charts
 helm repo update
 helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
 
+#########################
+## Cluster Details
+
+Bootstrap Node:
+{aws_instance.registry[0].public_ip}
+
+Control Plane Nodes:
+
+```
+%{ for index, cp in aws_instance.control_plane ~}
+    ${cp.private_ip}:
+      ansible_host: ${cp.public_ip}
+      node_pool: control
+%{ endfor ~}
+```
+
+Worker Nodes:
+```
+%{ for index, wk in aws_instance.worker ~}
+    ${wk.private_ip}:
+      ansible_host: ${wk.public_ip}
+      node_pool: worker
+%{ endfor ~}
+```
+
+Control Plane LoadBalancer:
+```
+${aws_elb.konvoy_control_plane.dns_name}
+```
+
+ssh-key:
+```
+${trimprefix(var.ssh_private_key_file, "../")}
+
+#########################
+Notes: URL
+http://${aws_instance.registry[0].public_ip}/dkp_2_install.md
 #########################
 Note: For Lab environment view the instructions in /home/centos/${local.cluster_name}-student-notes.txt on the registry/bootstrap server
 ssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}

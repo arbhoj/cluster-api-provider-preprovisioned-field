@@ -180,19 +180,18 @@
         owner: centos
         group: centos
         mode: 0600
-      tags:
-      - test
     - name: Start Notes Server
       docker_container:
         name: markdownserver
         image: thomsch98/markserv
         state: started
+        restart: yes
         ports:
-        - "443:6443"
+        - "80:3080"
         volumes:
         - /home/centos/notes:/data
       tags:
-      - test 
+      - test
     - name: Add alias for k and set kubeconfig to konvoy cluster
       blockinfile:
         path: /home/centos/.bashrc
