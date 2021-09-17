@@ -48,20 +48,6 @@
       script: create_registrycerts.sh
       args:
         creates: ca.crt
-    - name: Start Registry Server
-      docker_container:
-        name: dkpimageregistry
-        image: registry:2
-        state: started
-        ports:
-        - "5000:5000"
-        volumes:
-        - /home/centos/certs:/certs
-        env:
-          REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
-          REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
-          REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"
-      ignore_errors: yes
     - name: Download helm_install Script
       get_url:
         url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
@@ -87,7 +73,6 @@
       command: mv /home/centos/konvoy-image-bundle-{{konvoy_image_builder_version}}_linux /home/centos/konvoy-image-builder
       args:
         creates: /home/centos/konvoy-image-builder
-
   #URL is not reachable without signing in hence for now we will copy the file in the ansible controller under the home dir
   #  - name: Download DKP Installer
   #    get_url:
@@ -180,18 +165,6 @@
         owner: centos
         group: centos
         mode: 0600
-    - name: Start Notes Server
-      docker_container:
-        name: markdownserver
-        image: thomsch98/markserv
-        state: started
-        restart: yes
-        ports:
-        - "80:3080"
-        volumes:
-        - /home/centos/notes:/data
-      tags:
-      - test
     - name: Add alias for k and set kubeconfig to konvoy cluster
       blockinfile:
         path: /home/centos/.bashrc
@@ -200,3 +173,27 @@
           alias k="kubectl --kubeconfig=/home/centos/admin.conf"
         marker: "###Added for konvoy cluster###"
     become_user: centos
+  ##Running the following two as root as we were getting a (13,'Permission denied error') although the user is added to docker group. This could be because the same connection is being persisted and the user needs to logout and log back in for the permissions to become effective.  
+  - name: Start Notes Server
+    community.docker.docker_container:
+      name: markdownserver
+      image: thomsch98/markserv
+      state: started
+      restart: yes
+      ports:
+      - "80:3080"
+      volumes:
+      - /home/centos/notes:/data
+  - name: Start Registry Server
+    community.docker.docker_container:
+      name: dkpimageregistry
+      image: registry:2
+      state: started
+      ports:
+      - "5000:5000"
+      volumes:
+      - /home/centos/certs:/certs
+      env:
+        REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
+        REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
+        REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"

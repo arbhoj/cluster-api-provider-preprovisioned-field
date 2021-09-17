@@ -12,7 +12,9 @@ resource "local_file" "dkp_2_install_md" {
 ## Cluster Details
 
 Bootstrap Node:
+```
 ${aws_instance.registry[0].public_ip}
+```
 
 Control Plane Nodes:
 
@@ -40,9 +42,15 @@ ${trimprefix(var.ssh_private_key_file, "../")}
 ```
 ## Prepare the Machines
 
-First step is to build the pre-provisioned servers for them to be cluster api compliant
+Connect to the bootstrap server as all the lab exercises will be run from there.
 
-Run the following from the [konvoy-image-builder](https://github.com/mesosphere/konvoy-image-builder) dir
+```
+ssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}
+```
+
+First step is to make the nodes cluster api compliant. We use the the [konvoy-image-builder](https://github.com/mesosphere/konvoy-image-builder) tool for that.  
+
+Run the tool by using the following command from the konvoy-image-builder dir:
 
 ```
 cd /home/centos/konvoy-image-builder
