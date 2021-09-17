@@ -184,6 +184,7 @@
       - "80:3080"
       volumes:
       - /home/centos/notes:/data
+      container_default_behavior: compatibility
   - name: Start Registry Server
     community.docker.docker_container:
       name: dkpimageregistry
@@ -197,3 +198,4 @@
         REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
         REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/client-cert.crt"
         REGISTRY_HTTP_TLS_KEY: "/certs/client-key.key"
+      container_default_behavior: compatibility
