@@ -97,10 +97,6 @@ Update all occurances of cloud-provider="" to cloud-provider=aws. This is needed
 ```
 sed -i 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
 
-sed -i 's/konvoy.d2iq.io\/csi\:\ local-volume-provisioner/konvoy.d2iq.io\/csi\:\ aws-ebs/' deploy-dkp-${var.cluster_name}.yaml
-
-sed -i 's/konvoy.d2iq.io\/provider\:\ preprovisioned/konvoy.d2iq.io\/provider\:\ aws/' deploy-dkp-${var.cluster_name}.yaml
-
 ```
 
 Finally apply the deploy manifest to the bootstrap cluster to trigger the cluster deployment
@@ -138,7 +134,22 @@ kubectl get nodes
 ```
 
 ## Deploy Kommander
-Once the base cluster has been deployed, it's ready to deploy addon components to it. We do this using the `kommander-bootstrap` helm chart. Hence, the next step is to deploy this helm chart.
+
+### Prerequisite
+Kommander deploys a bunch of Stateful workloads that require persistent volumes to be created in the kubernetes cluster. In this step we will deploy awsebscsiprovisioner to the kommander cluster and set that as the default storage class
+
+```
+helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
+helm repo update
+helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --version 0.5.0 --values awsebscsiprovisioner_values.yaml
+```
+There can only be one default storage class at a time so we need to update the localvolumeprovisioner storage class (which is deployed automatically for a pre-provisioned cluster) and turn it's default flag to false
+
+```
+kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+``` 
+
+Once the base cluster has been deployed and we have a functional storage class, we are ready to deploy addon components to it. We do this using the `kommander-bootstrap` helm chart. Hence, the next step is to deploy this helm chart.
 
 ```
 export VERSION=${var.kommander_version}
