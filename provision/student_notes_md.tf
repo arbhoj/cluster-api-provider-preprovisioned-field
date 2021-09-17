@@ -20,14 +20,14 @@ Control Plane Nodes:
 
 ```
 %{ for index, cp in aws_instance.control_plane ~}
-    ${cp.private_ip}
+${cp.private_ip}
 %{ endfor ~}
 ```
 
 Worker Nodes:
 ```
 %{ for index, wk in aws_instance.worker ~}
-    ${wk.private_ip}
+${wk.private_ip}
 %{ endfor ~}
 ```
 
