@@ -3,7 +3,6 @@ export USERID=${PWD##*/}
 export CLUSTER_NAME=$USERID-dka100
 echo Are you sure you want to delete the cluster? Enter cluster name $CLUSTER_NAME to confirm deletion:
 read CONFIRM
-echo $CONFIRM
 if [[ $CONFIRM == $CLUSTER_NAME ]]; 
 then
    echo Deleting Cluster $CLUSTER_NAME

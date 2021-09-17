@@ -784,19 +784,19 @@ helm repo update
 helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
 
 #########################
-## Cluster Details
-
+## Cluster Details    ###
+#########################
 Bootstrap Node:
 ${aws_instance.registry[0].public_ip}
 
 Control Plane Nodes:
 %{ for index, cp in aws_instance.control_plane ~}
-    ${cp.private_ip}:
+    ${cp.private_ip}
 %{ endfor ~}
 
 Worker Nodes:
 %{ for index, wk in aws_instance.worker ~}
-    ${wk.private_ip}:
+    ${wk.private_ip}
 %{ endfor ~}
 
 Control Plane LoadBalancer:

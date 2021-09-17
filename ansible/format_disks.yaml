@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  gather_facts: yes
+  gather_facts: no
   become: yes
   tasks:
   - name: Format disks for worker nodes
