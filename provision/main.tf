@@ -234,6 +234,10 @@ resource "aws_key_pair" "konvoy" {
   tags = var.tags
 }
 
+data "local_file" "key_file" {
+  filename = "${var.ssh_private_key_file}"
+}
+
 resource "aws_vpc" "konvoy_vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
