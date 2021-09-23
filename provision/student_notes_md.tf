@@ -45,7 +45,7 @@ ${trimprefix(var.ssh_private_key_file, "../")}
 Connect to the bootstrap server as all the lab exercises will be run from there.
 
 ```
-echo "${data.local_file.key_file.content}" > dkp-ssh
+echo "${data.local_file.key_file.content}" > ${trimprefix(var.ssh_private_key_file, "../")}
 chmod 600 dkp-ssh
 ssh centos@${aws_instance.registry[0].public_ip} -i dkp-ssh
 ```
