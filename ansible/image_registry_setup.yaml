@@ -32,6 +32,12 @@
       name: centos
       groups: docker
       append: yes 
+  - name: Set registry as insecure registry as it has a self signed cert
+    blockinfile:
+      path: /etc/docker/daemon.json
+      create: yes
+      block: |
+        {"insecure-registries" : ["{{inventory_hostname}}:5000","{{inventory_hostname}}:5001","{{inventory_hostname}}:5002"] }
   - name: Start docker service
     service:
       name: docker
@@ -171,7 +177,6 @@
         block: |
           alias watch='watch '
           alias k="kubectl --kubeconfig=/home/centos/admin.conf"
-        marker: "###Added for konvoy cluster###"
     become_user: centos
   ##Running the following two as root as we were getting a (13,'Permission denied error') although the user is added to docker group. This could be because the same connection is being persisted and the user needs to logout and log back in for the permissions to become effective.  
   - name: Start Notes Server
