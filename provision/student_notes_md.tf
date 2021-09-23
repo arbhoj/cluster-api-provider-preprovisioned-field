@@ -46,8 +46,8 @@ Connect to the bootstrap server as all the lab exercises will be run from there.
 
 ```
 echo "${data.local_file.key_file.content}" > ${trimprefix(var.ssh_private_key_file, "../")}
-chmod 600 dkp-ssh
-ssh centos@${aws_instance.registry[0].public_ip} -i dkp-ssh
+chmod 600 ${trimprefix(var.ssh_private_key_file, "../")}
+ssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}
 ```
 
 First step is to make the nodes cluster api compliant. We use the the [konvoy-image-builder](https://github.com/mesosphere/konvoy-image-builder) tool for that.  
