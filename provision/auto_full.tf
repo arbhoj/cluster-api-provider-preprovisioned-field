@@ -92,7 +92,6 @@ if [ $# -ne 0 ]; then
       helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
       echo -e "\n\nKommander helm chart deployed. Might take upto 30 minutes for the addon apps to be deployed"
       echo -e "\nConnect to the bootstrap server and wait for all Helm Release resources to be ready"
-      echo -e "\nssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}"
       echo -e "\nRun the following to watch the status of the helm releases"
       echo -e "\nwatch k get hr -A"
       echo -e "\n\nRun the following to get the cluster details once traefik and dex are deployed"
@@ -104,8 +103,10 @@ if [ $# -ne 0 ]; then
   fi
 else
     echo -e "\n\nJust doing a base environment setup. Use instructions to build and deploy konvoy/kommander"
-    echo "Follow the instructions here for the steps to deploy cluster"
+    echo -e "\nFollow the instructions here for the steps to deploy cluster"
+    echo -e "\nhttp://${aws_instance.registry[0].public_ip}/dkp_2_install.md"
 fi
+echo -e "\nSSH Details: ssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}"
 exit
 EOF
 }
