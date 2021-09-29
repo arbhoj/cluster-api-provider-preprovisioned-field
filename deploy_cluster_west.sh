@@ -38,4 +38,4 @@ fi
 terraform -chdir=provision init
 
 terraform -chdir=provision apply -auto-approve -var-file ../$USERID.tfvars
-
+./provision/post_setup.sh $1

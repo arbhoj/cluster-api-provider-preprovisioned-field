@@ -32,17 +32,22 @@
       name: centos
       groups: docker
       append: yes 
-  - name: Set registry as insecure registry as it has a self signed cert
-    blockinfile:
-      path: /etc/docker/daemon.json
-      create: yes
-      block: |
-        {"insecure-registries" : ["{{inventory_hostname}}:5000","{{inventory_hostname}}:5001","{{inventory_hostname}}:5002"] }
   - name: Start docker service
     service:
       name: docker
       state: started
       enabled: yes
+  - name: Set registry as insecure as it has a self signed cert
+    copy:
+      dest: "/etc/docker/daemon.json"
+      content: |
+        {"insecure-registries" : ["{{inventory_hostname}}:5000","{{inventory_hostname}}:5001","{{inventory_hostname}}:5002"]}
+  - name: Daemon reload and restart docker service
+    service:
+      name: docker
+      state: restarted
+      enabled: yes
+      daemon_reload: yes
   - name: Download and configure kubectl
     get_url:
       url: "https://dl.k8s.io/release/{{kubectl_version}}/bin/linux/amd64/kubectl"
@@ -177,6 +182,15 @@
         block: |
           alias watch='watch '
           alias k="kubectl --kubeconfig=/home/centos/admin.conf"
+    - name: Copy auto_full.sh to the registry server
+      copy:
+        src: "../provision/auto_full.sh"
+        dest: /home/centos/
+        owner: centos
+        group: centos
+        mode: 0700
+    - name: Execute auto_full.sh
+      script: ../provision/auto_full.sh 
     become_user: centos
   ##Running the following two as root as we were getting a (13,'Permission denied error') although the user is added to docker group. This could be because the same connection is being persisted and the user needs to logout and log back in for the permissions to become effective.  
   - name: Start Notes Server

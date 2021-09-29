@@ -6,6 +6,8 @@ read CONFIRM
 if [[ $CONFIRM == $CLUSTER_NAME ]]; 
 then
    echo Deleting Cluster $CLUSTER_NAME
+   echo "First deleteing any services of type loadbalancer"
+   ./provision/pre_delete.sh 
    terraform -chdir=provision/ destroy --auto-approve -var-file ../$USERID.tfvars
 else
    echo "Skipping"
