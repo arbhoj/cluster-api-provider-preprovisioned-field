@@ -728,65 +728,6 @@ output "z_run_this" {
 
   value = <<EOF
 
-###Build Server######
-###Run the following from the konvoy-image builder dir https://github.com/mesosphere/konvoy-image-builder
-cd /home/centos/konvoy-image-builder
-/konvoy-image provision --inventory-file /home/centos/provision/inventory.yaml  images/ami/flatcar.yaml #Select a yaml depending on the operating system of the cluster 
-
-########################
-###Deploy DKP Cluster###
-########################
-###Run these from the directory where DKP binary has been downloaded
-
-#First create a bootstrap cluster 
-./dkp create bootstrap
-
-#Once bootstrap cluster is created add the secret containing the private key to connect to the hosts
-kubectl create secret generic ${var.cluster_name}-ssh-key --from-file=ssh-privatekey=${path.cwd}/provision/${var.ssh_private_key_file}
-
-#Create the pre-provisioned inventory resources
-kubectl apply -f ${path.cwd}/provision/${var.cluster_name}-preprovisioned_inventory.yaml
-
-#Create the manifest files for deploying the konvoy to the cluster
-./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
-
-#Note if deploying a flatcar cluster then add the --os-hint=flatcar flag like this:
-./dkp create cluster preprovisioned --cluster-name ${var.cluster_name} --control-plane-endpoint-host ${aws_elb.konvoy_control_plane.dns_name} --os-hint=flatcar --control-plane-replicas 1 --worker-replicas 4 --dry-run -o yaml > deploy-dkp-${var.cluster_name}.yaml
-
-##Update all occurances of cloud-provider="" to cloud-provider=aws
-#Set cloud-provider to aws
-sed -i '' 's/cloud-provider\:\ \"\"/cloud-provider\:\ \"aws\"/' deploy-dkp-${var.cluster_name}.yaml
-
-##Now apply the deploy manifest to the bootstrap cluster
-kubectl apply -f deploy-dkp-${var.cluster_name}.yaml
-
-##Run the following commands to view the status of the deployment
-./dkp describe cluster -c $CLUSTER_NAME
-kubectl logs -f -n cappp-system deploy/cappp-controller-manager
-
-##After 5 minutes or so if there is no critical error in the above, run the following command to get the admin kubeconfig of the provisioned DKP cluster
-./dkp get kubeconfig -c $CLUSTER_NAME > admin.conf
-
-##Set admin.conf as the current KUBECONFIG
-export KUBECONFIG=$(pwd)/admin.conf
-
-##Run the following to make sure all the nodes in the DKP cluster are in Ready state
-kubectl get nodes
-
-###Optional: Deploy awsebscsiprovisioner###
-helm repo add d2iq-stable https://mesosphere.github.io/charts/stable
-helm repo update
-helm install awsebscsiprovisioner d2iq-stable/awsebscsiprovisioner --values awsebscsiprovisioner_values.yaml
-kubectl patch sc localvolumeprovisioner -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-
-########################
-###Deploy Kommander#####
-########################
-export VERSION=${var.kommander_version}
-helm repo add kommander https://mesosphere.github.io/kommander/charts
-helm repo update
-helm install -n kommander --create-namespace kommander-bootstrap kommander/kommander-bootstrap --version=${var.kommander_version} --set certManager=$(kubectl get ns cert-manager > /dev/null 2>&1 && echo "false" || echo "true")
-
 #########################
 ## Cluster Details    ###
 #########################

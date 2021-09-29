@@ -93,7 +93,13 @@ if [ $# -ne 0 ]; then
       echo -e "\n\nKommander helm chart deployed. Might take upto 30 minutes for the addon apps to be deployed"
       echo -e "\nConnect to the bootstrap server and wait for all Helm Release resources to be ready"
       echo -e "\nssh centos@${aws_instance.registry[0].public_ip} -i ${trimprefix(var.ssh_private_key_file, "../")}"
+      echo -e "\nRun the following to watch the status of the helm releases"
       echo -e "\nwatch k get hr -A"
+      echo -e "\n\nRun the following to get the cluster details once traefik and dex are deployed"
+      echo -e "\n./get_cluster_details.sh"
+      echo -e "\nNote: Before deploying any helm charts make sure to set admin.conf as the KUBECONFIG"
+      echo -e "\nE.g. export KUBECONFIG=$(pwd)/admin.conf"
+      echo -e "\n\n"
     fi
   fi
 else
